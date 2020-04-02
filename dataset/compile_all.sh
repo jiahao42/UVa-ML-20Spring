@@ -1,10 +1,12 @@
+TAR_DIR="tarballs"
+
 compile () {
 	base=`basename $1 .tar.gz`
 	dir="$2_$base"
 	if [ ! -d "$dir" ]; 
 	then
 		mkdir -p $dir
-		tar xf $1 -C $dir --strip-components 1
+		tar xf $TAR_DIR/$1 -C $dir --strip-components 1
 		cd $dir
 		CC=$2 ./configure
 		make

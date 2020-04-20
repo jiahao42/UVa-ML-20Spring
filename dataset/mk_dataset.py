@@ -8,6 +8,7 @@ def analyze_binary(path):
   p = angr.Project(path, auto_load_libs = False)
   cfg = p.analyses.CFG()
   p.analyses.CompleteCallingConventions(recover_variables = True)
+  p.analyses.Identifier()
   return cfg
 
 def extract_raw_features(cfg):

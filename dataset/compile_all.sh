@@ -1,40 +1,40 @@
 TAR_DIR="tarballs"
 
+LOG="error.log"
+compilers=("gcc" "clang" "tcc")
+
 compile () {
 	base=`basename $1 .tar.gz`
-	dir="$2_$base"
-	if [ ! -d "$dir" ]; 
-	then
-		mkdir -p $dir
-		tar xf $TAR_DIR/$1 -C $dir --strip-components 1
-		cd $dir
-		CC=$2 ./configure
-		make
-		cd ..
-	fi
+	for compiler in "${compilers[@]}"; do
+		dir="$compiler""_$base"
+		if [ ! -d "$dir" ]; 
+		then
+			mkdir -p $dir
+			tar xf $TAR_DIR/$1 -C $dir --strip-components 1
+			cd $dir
+			CC=$compiler ./configure
+			if [ $? -ne 0 ]; then
+				echo "Error during configure, $compiler $base" >> $LOG
+			fi
+			make
+			if [ $? -ne 0 ]; then
+				echo "Error during make, $compiler $base" >> $LOG
+			fi
+			cd ..
+		fi
+	done
 }
 
-
-compile bash-4.4.18.tar.gz gcc
-compile bash-4.4.18.tar.gz clang
-compile bash-4.4.18.tar.gz tcc
-
-compile grep-2.28.tar.gz gcc
-compile grep-2.28.tar.gz clang
-compile grep-2.28.tar.gz tcc
-
-compile tar-1.27.tar.gz gcc
-compile tar-1.27.tar.gz clang
-compile tar-1.27.tar.gz tcc
-
-compile patch-2.7.tar.gz gcc
-compile patch-2.7.tar.gz clang
-compile patch-2.7.tar.gz tcc
-
-compile bc-1.07.tar.gz gcc
-compile bc-1.07.tar.gz clang
-compile bc-1.07.tar.gz tcc
-
-compile wget-1.20.tar.gz gcc
-compile wget-1.20.tar.gz clang
-compile wget-1.20.tar.gz tcc
+echo "" > $LOG
+compile bash-4.4.18.tar.gz
+compile grep-2.28.tar.gz 
+compile tar-1.27.tar.gz 
+compile patch-2.7.tar.gz
+compile bc-1.07.tar.gz 
+compile wget-1.20.tar.gz
+compile nano-4.9.2.tar.gz
+compile sed-4.8.tar.gz
+compile gzip-1.3.14.tar.gz
+#compile autoconf-2.69.tar.gz
+#compile autogen-5.18.7.tar.gz 
+#compile bison-3.5.4.tar.gz 

@@ -51,6 +51,10 @@ binary_paths = [
     'wget-1.20/src/wget',
     'patch-2.7/src/patch',
     'bc-1.07/bc/bc',
+    'sed-4.8/sed/sed',
+    'nano-4.9.2/src/nano',
+    'gzip-1.3.14/gzip',
+    # 'bison-3.5.4/src/bison',
     # 'custom/a.out'
 ]
 

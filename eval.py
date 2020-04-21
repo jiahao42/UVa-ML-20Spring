@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # @File: eval
 # @Author: Jiahao Cai
+# @Date: 04/21/2020
 # @Description: 
 
 from sklearn.metrics.pairwise import cosine_similarity as cos_sim
@@ -72,7 +73,8 @@ def eval_all():
     ]
     for x, y in data:
       for name, feature in x.items():
-        if feature['size_func'] < 20: continue
+        if feature['size_func'] < 12: continue
+        if 'sub_' in name: continue
         if name not in y: continue
         res = eval_one(rfc, feature, y)
 

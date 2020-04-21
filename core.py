@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # @File: core
 # @Author: Jiahao Cai
+# @Date: 04/21/2020
 # @Description: 
+
 
 from sklearn.metrics.pairwise import cosine_similarity as cos_sim
 from sklearn.ensemble import RandomForestClassifier
@@ -27,7 +29,8 @@ def prepare_neg(pos, neg):
   features = []
   names = []
   for i, (name, feature) in enumerate(pos.items()):
-    if feature['size_func'] < 20: continue
+    # if feature['size_func'] < 12: continue
+    # if 'sub_' in name: continue
     f1 = feature
     f2 = neg[i]
     features.append(normalize(f1) + normalize(f2))
@@ -77,10 +80,24 @@ def gen_negative_samples(size):
         }
   return samples
 
+def preprocess(training_data):
+  ntraining_data = []
+  for data in training_data:
+    ndata = []
+    for d in data:
+      nd = {}
+      for name, feature in d.items():
+        if feature['size_func'] > 12 and 'sub_' not in name:
+          nd[name] = feature
+      ndata.append(nd)
+    ntraining_data.append(ndata)
+  return ntraining_data
+
 def train(rfc, training_data_files):
   train_features = []
   train_labels = []
   training_data = load_data(training_data_files)
+  training_data = preprocess(training_data)
   for data in training_data:
     gcc_data = data[0]
     clang_data = data[1]

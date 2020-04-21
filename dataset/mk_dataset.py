@@ -44,6 +44,9 @@ binary_paths = [
     'tar-1.27/src/tar',
     'grep-2.28/src/grep',
     'bash-4.4.18/bash',
+    'wget-1.20/src/wget',
+    'patch-2.7/src/patch',
+    'bc-1.07/bc/bc',
     # 'custom/a.out'
 ]
 

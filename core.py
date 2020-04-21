@@ -1,12 +1,13 @@
-from sklearn.tree import DecisionTreeClassifier
+#!/usr/bin/env python3
+# @File: core
+# @Author: Jiahao Cai
+# @Description: 
+
 from sklearn.metrics.pairwise import cosine_similarity as cos_sim
 from sklearn.ensemble import RandomForestClassifier
 import pickle
-from scipy.stats import logistic
-from scipy.special import expit
 from utils import *
 import random
-import numpy as np
 
 CONSTANT_MAX_NUM = 100
 
@@ -18,7 +19,7 @@ def prepare_pos(data1, data2):
     f1 = feature
     if name not in data2: continue
     f2 = data2[name]
-    features.append(normalize(f1, f2))
+    features.append(normalize(f1) + normalize(f2))
     names.append(name)
   return features, [1] * len(features), names
 
@@ -29,29 +30,29 @@ def prepare_neg(pos, neg):
     if feature['size_func'] < 20: continue
     f1 = feature
     f2 = neg[i]
-    features.append(normalize(f1, f2))
+    features.append(normalize(f1) + normalize(f2))
     names.append(name)
   return features, [0] * len(features), names
 
-def normalize(f1, f2):
-  features = []
-  for f in [f1, f2]:
-    feature = []
-    for name, data in f.items():
-      if name == 'constants':
-        constants = list(map(sigmoid, list(data)))
-        if len(constants) < CONSTANT_MAX_NUM:
-          constants += [0] * (CONSTANT_MAX_NUM - len(constants))
-        feature += constants[:CONSTANT_MAX_NUM]
-      elif name == 'graph' or name == 'name':
-        continue
-      elif isinstance(data, list):
-        feature += data
-      else:
-        feature.append(data)
-    features += feature
-    # features.append(feature)
-  return features
+def normalize(f):
+  # features = []
+  # for f in [f1, f2]:
+  feature = []
+  for name, data in f.items():
+    if name == 'constants':
+      constants = list(map(sigmoid, list(data)))
+      if len(constants) < CONSTANT_MAX_NUM:
+        constants += [0] * (CONSTANT_MAX_NUM - len(constants))
+      feature += constants[:CONSTANT_MAX_NUM]
+    elif name == 'graph' or name == 'name':
+      continue
+    elif isinstance(data, list):
+      feature += data
+    else:
+      feature.append(data)
+  # features += feature
+  # return features
+  return feature
 
 def gen_negative_samples(size):
   samples = [None for _ in range(size)]
@@ -76,38 +77,10 @@ def gen_negative_samples(size):
         }
   return samples
 
-training_data_files = [
-    [
-      'gcc_grep.pickle',
-      'clang_grep.pickle',
-      'tcc_grep.pickle',
-    ],
-    [
-      'gcc_bash.pickle',
-      'clang_bash.pickle',
-      'tcc_bash.pickle',
-    ],
-    [
-      'gcc_tar.pickle',
-      'clang_tar.pickle',
-      'tcc_tar.pickle',
-    ],
-]
-
-def load_training_data():
-  training_data = []
-  for filenames in training_data_files:
-    data = []
-    for filename in filenames:
-      with open('dataset/' + filename, 'rb') as f:
-        data.append(pickle.load(f))
-    training_data.append(data)
-  return training_data
-
-def train(rfc):
+def train(rfc, training_data_files):
   train_features = []
   train_labels = []
-  training_data = load_training_data()
+  training_data = load_data(training_data_files)
   for data in training_data:
     gcc_data = data[0]
     clang_data = data[1]
@@ -141,6 +114,23 @@ def train(rfc):
 
 
 if __name__ == '__main__':
+  training_data_files = [
+      [
+        'gcc_grep.pickle',
+        'clang_grep.pickle',
+        'tcc_grep.pickle',
+      ],
+      [
+        'gcc_bash.pickle',
+        'clang_bash.pickle',
+        'tcc_bash.pickle',
+      ],
+      [
+        'gcc_tar.pickle',
+        'clang_tar.pickle',
+        'tcc_tar.pickle',
+      ],
+  ]
   with open('dataset/gcc_bash.pickle', 'rb') as f:
     gcc_bash = pickle.load(f)
   with open('dataset/clang_bash.pickle', 'rb') as f:
@@ -152,7 +142,7 @@ if __name__ == '__main__':
   bash_tcc_clang_features, bash_tcc_clang_labels, bash_tcc_clang_names = prepare_pos(tcc_bash, clang_bash)
 
   rfc = RandomForestClassifier(random_state = 42)
-  train(rfc)
+  train(rfc, training_data_files)
   paths, _ = rfc.decision_path(bash_gcc_clang_features)
 
   base, _ = rfc.decision_path([bash_tcc_clang_features[10]])

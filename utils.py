@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
+# @File: utils
+# @Author: Jiahao Cai
+# @Description: 
 
 import networkx as nx
 from math import exp
 import numpy as np
+import pickle
 
 # see https://networkx.github.io/documentation/stable/reference/algorithms/similarity.html
 def edit_distance(G1, G2):
@@ -21,4 +25,12 @@ def sigmoid(x):
         ret = z / (1 + z)
         return -1.0 if np.isnan(ret) else ret
 
-
+def load_data(data_files, path = 'dataset/'):
+  data = []
+  for filenames in data_files:
+    _data = []
+    for filename in filenames:
+      with open(path + filename, 'rb') as f:
+        _data.append(pickle.load(f))
+    data.append(_data)
+  return data

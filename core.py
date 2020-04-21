@@ -17,7 +17,7 @@ def prepare_pos(data1, data2):
   features = []
   names = []
   for name, feature in data1.items():
-    if feature['size_func'] < 20: continue
+    # if feature['size_func'] < 4: continue
     f1 = feature
     if name not in data2: continue
     f2 = data2[name]
@@ -29,7 +29,7 @@ def prepare_neg(pos, neg):
   features = []
   names = []
   for i, (name, feature) in enumerate(pos.items()):
-    # if feature['size_func'] < 12: continue
+    # if feature['size_func'] < 4: continue
     # if 'sub_' in name: continue
     f1 = feature
     f2 = neg[i]
@@ -87,8 +87,9 @@ def preprocess(training_data):
     for d in data:
       nd = {}
       for name, feature in d.items():
-        if feature['size_func'] > 12 and 'sub_' not in name:
+        if feature['size_func'] >= 32 and 'sub_' not in name:
           nd[name] = feature
+      print("after preprocessing", len(d), len(nd))
       ndata.append(nd)
     ntraining_data.append(ndata)
   return ntraining_data

@@ -8,48 +8,28 @@ from sklearn.metrics.pairwise import cosine_similarity as cos_sim
 from sklearn.ensemble import RandomForestClassifier
 from core import *
 
+programs = [
+  'grep', 'bash', 'tar', 'patch',
+  'wget', 'patch', 'bc', 'sed',
+  'nano', 'gzip',
+]
+compilers = ['gcc', 'clang', 'tcc']
 training_data_files = [
-  [
-    'gcc_grep.pickle',
-    'clang_grep.pickle',
-    'tcc_grep.pickle',
-  ],
-  [
-    'gcc_bash.pickle',
-    'clang_bash.pickle',
-    'tcc_bash.pickle',
-  ],
-  [
-    'gcc_tar.pickle',
-    'clang_tar.pickle',
-    'tcc_tar.pickle',
-  ],
+  [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in programs
 ]
 
+eval_programs = ['bc']
 eval_data_files = [
-  [
-    'gcc_bc.pickle',
-    'clang_bc.pickle',
-    'tcc_bc.pickle',
-  ],
-  # [
-    # 'gcc_patch.pickle',
-    # 'clang_patch.pickle',
-    # 'tcc_patch.pickle',
-  # ],
-  # [
-    # 'gcc_wget.pickle',
-    # 'clang_wget.pickle',
-    # 'tcc_wget.pickle',
-  # ]
+  [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in eval_programs
 ]
 
-def get_topN_result(base, paths, N = 5):
+def get_topN_result(base, paths, N):
   sims = [(cos_sim(path, base), i) for i, path in enumerate(paths)]
   sims = sorted(sims, key = lambda x: x[0], reverse = True)
   return sims[:N]
 
-def eval_one(rfc, target, features):
+def eval_one(rfc, target, features, N = 5):
+  """Return: index of similar functions"""
   res = []
   base, _ = rfc.decision_path([normalize(target) + normalize(target)])
   nfs = [None for _ in range(len(features))]
@@ -58,31 +38,39 @@ def eval_one(rfc, target, features):
     nfs[i] = nf
     
   paths, _ = rfc.decision_path(nfs)
-  return get_topN_result(base, paths)
-
+  return get_topN_result(base, paths, N)
 
 def eval_all():
   rfc = RandomForestClassifier(random_state = 42)
   train(rfc, training_data_files)
   eval_data = load_data(eval_data_files)
+  eval_data = preprocess(eval_data)
+  total_count = 0
+  topN_corr_count = 0
+  exact_corr_count = 0
   for prog_data in eval_data:
     data = [
       [prog_data[0], prog_data[1]],
       [prog_data[0], prog_data[2]],
       [prog_data[1], prog_data[2]],
     ]
-    for x, y in data:
+    for x, y in data: 
+      yl = list(y)
       for name, feature in x.items():
-        if feature['size_func'] < 12: continue
-        if 'sub_' in name: continue
+        # if feature['size_func'] < 4: continue
+        # if 'sub_' in name: continue
         if name not in y: continue
-        res = eval_one(rfc, feature, y)
-
-        print(name)
-        for val, i in res:
-          print(list(y)[i])
-        print('x'*77)
-
+        total_count += 1 
+        res = eval_one(rfc, feature, y, 10)
+        names = [yl[i] for val, i in res]
+        if names[0] == name:
+          exact_corr_count += 1
+        if name in names:
+          topN_corr_count += 1
+        # print(name, names)
+  print(exact_corr_count, topN_corr_count, total_count)
+  print(exact_corr_count / total_count)
+  print(topN_corr_count / total_count)
 
 if __name__ == '__main__':
   eval_all()

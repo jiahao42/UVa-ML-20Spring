@@ -34,14 +34,15 @@ def eval_one(rfc, target, features, N = 5):
   base, _ = rfc.decision_path([normalize(target) + normalize(target)])
   nfs = [None for _ in range(len(features))]
   for i, (name, f) in enumerate(features.items()):
-    nf = normalize(target) + normalize(f)
+    # nf = normalize(target) + normalize(f)
+    nf = normalize(f) + normalize(f)
     nfs[i] = nf
     
   paths, _ = rfc.decision_path(nfs)
   return get_topN_result(base, paths, N)
 
 def eval_all():
-  rfc = RandomForestClassifier(random_state = 42)
+  rfc = RandomForestClassifier(random_state = 42, n_estimators = 200)
   train(rfc, training_data_files)
   eval_data = load_data(eval_data_files)
   eval_data = preprocess(eval_data)
@@ -61,8 +62,16 @@ def eval_all():
         # if 'sub_' in name: continue
         if name not in y: continue
         total_count += 1 
-        res = eval_one(rfc, feature, y, 10)
+        res = eval_one(rfc, feature, y, 100)
         names = [yl[i] for val, i in res]
+        G1 = feature['graph']
+        Gsims = []
+        for name in names:
+          G2 = y[name]['graph']
+          Gsims.append((edit_distance(G1, G2), name))
+        Gsims = sorted(Gsims, key=lambda x: x[0], reverse = True)
+        topN = Gsims[:10]
+        names = [name for sim, name in topN]
         if names[0] == name:
           exact_corr_count += 1
         if name in names:

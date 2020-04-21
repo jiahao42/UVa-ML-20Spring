@@ -89,7 +89,7 @@ def preprocess(training_data):
       for name, feature in d.items():
         if feature['size_func'] >= 32 and 'sub_' not in name:
           nd[name] = feature
-      print("after preprocessing", len(d), len(nd))
+      # print("after preprocessing", len(d), len(nd))
       ndata.append(nd)
     ntraining_data.append(ndata)
   return ntraining_data

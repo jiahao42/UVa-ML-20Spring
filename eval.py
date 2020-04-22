@@ -9,16 +9,15 @@ from sklearn.ensemble import RandomForestClassifier
 from core import *
 
 programs = [
-  'grep', 'bash', 'tar', 'patch',
-  'wget', 'patch', 'bc', 'sed',
-  'nano', 'gzip',
+  'grep', 'bash', 'tar', # 'patch',
+  'wget', 'bc', 'sed', 'nano', 'gzip',
 ]
 compilers = ['gcc', 'clang', 'tcc']
 training_data_files = [
   [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in programs
 ]
 
-eval_programs = ['bc']
+eval_programs = ['patch']
 eval_data_files = [
   [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in eval_programs
 ]
@@ -62,7 +61,9 @@ def eval_all():
         # if 'sub_' in name: continue
         if name not in y: continue
         total_count += 1 
-        res = eval_one(rfc, feature, y, 5)
+        numerical_topN = 10
+        structural_topN = 5
+        res = eval_one(rfc, feature, y, numerical_topN)
         names = [yl[i] for val, i in res]
         G1 = feature['graph']
         Gsims = []
@@ -71,7 +72,7 @@ def eval_all():
           dist = edit_distance(G1, G2)
           Gsims.append((dist, name))
         Gsims = sorted(Gsims, key=lambda x: x[0], reverse = True)
-        topN = Gsims[:5]
+        topN = Gsims[:structural_topN]
         names = [name for sim, name in topN]
         print(name, names)
         if names[0] == name:

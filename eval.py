@@ -62,16 +62,18 @@ def eval_all():
         # if 'sub_' in name: continue
         if name not in y: continue
         total_count += 1 
-        res = eval_one(rfc, feature, y, 100)
+        res = eval_one(rfc, feature, y, 5)
         names = [yl[i] for val, i in res]
         G1 = feature['graph']
         Gsims = []
         for name in names:
           G2 = y[name]['graph']
-          Gsims.append((edit_distance(G1, G2), name))
+          dist = edit_distance(G1, G2)
+          Gsims.append((dist, name))
         Gsims = sorted(Gsims, key=lambda x: x[0], reverse = True)
-        topN = Gsims[:10]
+        topN = Gsims[:5]
         names = [name for sim, name in topN]
+        print(name, names)
         if names[0] == name:
           exact_corr_count += 1
         if name in names:

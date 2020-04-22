@@ -11,8 +11,11 @@ import pickle
 
 # see https://networkx.github.io/documentation/stable/reference/algorithms/similarity.html
 def edit_distance(G1, G2):
-  return nx.graph_edit_distance(G1, G2)
-  # return nx.optimize_graph_edit_distance(G1, G2)
+  # res = nx.graph_edit_distance(G1, G2)
+  res = nx.optimize_graph_edit_distance(G1, G2)
+  for v in res:
+    # print(v)
+    return v
   # return nx.optimal_edit_paths(G1, G2)
   # return nx.simrank_similarity_numpy(G1, G2)
 

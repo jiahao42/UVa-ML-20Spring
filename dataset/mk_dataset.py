@@ -7,6 +7,7 @@
 import pickle
 import os
 import angr
+from collections import Counter
 
 def analyze_binary(path):
   p = angr.Project(path, auto_load_libs = False)
@@ -15,6 +16,15 @@ def analyze_binary(path):
   p.analyses.Identifier()
   return cfg
 
+"""
+Operations:
+Iop_Shl, Iop_Shr
+Iop_Or, Iop_And
+Iop_Xor
+Iop_Neg, Iop_Abs / Iop_NegF, Iop_AbsF
+Iop_Add, Iop_Sub, Iop_Mul, Iop_Div / Iop_AddF, Iop_SubF, Iop_MulF, Iop_DivF
+Iop_CmpEQ, Iop_CmpNE, Iop_CmpLE, Iop_CmpLT / ...32/64F
+"""
 def extract_raw_features(cfg):
   features = {}
   cfgs = {}
@@ -32,6 +42,7 @@ def extract_raw_features(cfg):
         'constants': constants,
         'num_nodes': func.graph.number_of_nodes(),
         'num_edges': func.graph.number_of_edges(),
+        'operations': Counter(func.operations),
         'graph': func.graph,
     }
     features[func.name] = feature

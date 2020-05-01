@@ -30,10 +30,9 @@ def get_topN_result(base, paths, N):
 def eval_one(rfc, target, features, N = 5):
   """Return: index of similar functions"""
   res = []
-  base, _ = rfc.decision_path([normalize(target) + normalize(target)])
+  base, _ = rfc.decision_path(target)
   nfs = [None for _ in range(len(features))]
   for i, (name, f) in enumerate(features.items()):
-    # nf = normalize(target) + normalize(f)
     nf = normalize(f) + normalize(f)
     nfs[i] = nf
     
@@ -59,22 +58,24 @@ def eval_all():
       for name, feature in x.items():
         # if feature['size_func'] < 4: continue
         # if 'sub_' in name: continue
-        if name not in y: continue
+        if name not in y: continue # name only appears in one program
+        nf = [normalize(feature) + normalize(feature)]
+        if nf.count(0) / len(nf) > 0.5: continue # discard if the feature has too many 0
         total_count += 1 
-        numerical_topN = 10
+        numerical_topN = 5
         structural_topN = 5
-        res = eval_one(rfc, feature, y, numerical_topN)
+        res = eval_one(rfc, nf, y, numerical_topN)
         names = [yl[i] for val, i in res]
-        G1 = feature['graph']
-        Gsims = []
-        for name in names:
-          G2 = y[name]['graph']
-          dist = edit_distance(G1, G2)
-          Gsims.append((dist, name))
-        Gsims = sorted(Gsims, key=lambda x: x[0], reverse = True)
-        topN = Gsims[:structural_topN]
-        names = [name for sim, name in topN]
-        print(name, names)
+        # G1 = feature['graph']
+        # Gsims = []
+        # for name in names:
+          # G2 = y[name]['graph']
+          # dist = edit_distance(G1, G2)
+          # Gsims.append((dist, name))
+        # Gsims = sorted(Gsims, key=lambda x: x[0], reverse = True)
+        # topN = Gsims[:structural_topN]
+        # names = [name for sim, name in topN]
+        # print(name, names)
         if names[0] == name:
           exact_corr_count += 1
         if name in names:

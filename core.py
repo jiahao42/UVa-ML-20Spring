@@ -10,8 +10,8 @@ from sklearn.ensemble import RandomForestClassifier
 import pickle
 from utils import *
 import random
+from collections import Counter
 
-CONSTANT_MAX_NUM = 100
 
 def prepare_pos(data1, data2):
   features = []
@@ -37,6 +37,20 @@ def prepare_neg(pos, neg):
     names.append(name)
   return features, [0] * len(features), names
 
+op_list = [
+  ['Shl', 'Shr'],
+  ['Or', 'And'],
+  ['Xor'],
+  ['NegF', 'AbsF'],
+  ['Neg', 'Abs'],
+  ['AddF', 'SubF', 'MulF', 'DivF'],
+  ['Add', 'Sub', 'Mul', 'Div'],
+  ['CmpEQ32F', 'CmpEQ64F', 'CmpNE', 'CmpLE32F', 'CmpLE64F', 'CmpLT32F', 'CmpLT64F', 'CmpGE32F', 'CmpGE64F', 'CmpGT32F', 'CmpGT64F'],
+  ['CmpEQ', 'CmpNE', 'CmpLE', 'CmpLT', 'CmpGE', 'CmpGT']
+]
+
+CONSTANT_MAX_NUM = 20
+
 def normalize(f):
   # features = []
   # for f in [f1, f2]:
@@ -49,13 +63,33 @@ def normalize(f):
       feature += constants[:CONSTANT_MAX_NUM]
     elif name == 'graph' or name == 'name':
       continue
+    elif name == 'operations':
+      # continue
+      f = [0] * len(op_list)
+      for target, num in data.items(): # {op: # of appearance}
+        found = False
+        for i, ops in enumerate(op_list):
+          if found: break
+          for op in ops:
+            if op in target:
+              f[i] += 1
+              found = True
+              break
+      feature += f
     elif isinstance(data, list):
       feature += data
     else:
       feature.append(data)
+  # print(feature)
   # features += feature
   # return features
   return feature
+
+def gen_random_operations():
+  op_map = {}
+  for ops in op_list:
+    op_map[random.choice(ops)] = random.randint(0, 100)
+  return op_map
 
 def gen_negative_samples(size):
   samples = [None for _ in range(size)]
@@ -77,6 +111,7 @@ def gen_negative_samples(size):
         'constants': constants,
         'num_nodes': num_nodes,
         'num_edges': num_edges,
+        'operations': gen_random_operations()
         }
   return samples
 

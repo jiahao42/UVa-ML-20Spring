@@ -17,7 +17,6 @@ def prepare_pos(data1, data2):
   features = []
   names = []
   for name, feature in data1.items():
-    # if feature['size_func'] < 4: continue
     f1 = feature
     if name not in data2: continue
     f2 = data2[name]
@@ -28,28 +27,45 @@ def prepare_pos(data1, data2):
 def prepare_neg(pos, neg):
   features = []
   names = []
-  for i, (name, feature) in enumerate(pos.items()):
-    # if feature['size_func'] < 4: continue
-    # if 'sub_' in name: continue
+  labels = []
+  names = list(pos.keys())
+  fs = list(pos.values())
+  for i, (name, feature) in enumerate(zip(names, fs)):
     f1 = feature
-    f2 = neg[i]
+    f2 = fs[(i + 1) % len(pos)]
+    # f2 = neg[i]
+    # max_sz = max(f1['size_func'], f2['size_func'])
+    # min_sz = min(f1['size_func'], f2['size_func'])
+    # if min_sz == 0:
+      # label = 0.0
+    # else:
+      # label = max_sz / min_sz
+    # labels.append(label)
     features.append(normalize(f1) + normalize(f2))
     names.append(name)
-  return features, [0] * len(features), names
+  labels = [0] * len(pos)
+  return features, labels, names
 
 op_list = [
   ['Shl', 'Shr'],
-  ['Or', 'And'],
+  ['Or'], 
+  ['And'],
   ['Xor'],
   ['NegF', 'AbsF'],
   ['Neg', 'Abs'],
   ['AddF', 'SubF', 'MulF', 'DivF'],
   ['Add', 'Sub', 'Mul', 'Div'],
-  ['CmpEQ32F', 'CmpEQ64F', 'CmpNE', 'CmpLE32F', 'CmpLE64F', 'CmpLT32F', 'CmpLT64F', 'CmpGE32F', 'CmpGE64F', 'CmpGT32F', 'CmpGT64F'],
-  ['CmpEQ', 'CmpNE', 'CmpLE', 'CmpLT', 'CmpGE', 'CmpGT']
+  ['CmpEQ32F', 'CmpEQ64F', 'CmpNE'],
+  ['CmpLE32F', 'CmpLE64F'],
+  ['CmpLT32F', 'CmpLT64F'], 
+  ['CmpGE32F', 'CmpGE64F'], 
+  ['CmpGT32F', 'CmpGT64F'],
+  ['CmpEQ', 'CmpNE'], 
+  ['CmpLE', 'CmpLT'], 
+  ['CmpGE', 'CmpGT'],
 ]
 
-CONSTANT_MAX_NUM = 20
+CONSTANT_MAX_NUM = 300
 
 def normalize(f):
   # features = []
@@ -57,7 +73,8 @@ def normalize(f):
   feature = []
   for name, data in f.items():
     if name == 'constants':
-      constants = list(map(sigmoid, list(data)))
+      constants = list(map(lambda x: sigmoid(x, 10.0), list(data)))
+      # constants = list(data)
       if len(constants) < CONSTANT_MAX_NUM:
         constants += [0] * (CONSTANT_MAX_NUM - len(constants))
       feature += constants[:CONSTANT_MAX_NUM]
@@ -80,9 +97,6 @@ def normalize(f):
       feature += data
     else:
       feature.append(data)
-  # print(feature)
-  # features += feature
-  # return features
   return feature
 
 def gen_random_operations():
@@ -122,14 +136,14 @@ def preprocess(training_data):
     for d in data:
       nd = {}
       for name, feature in d.items():
-        if feature['size_func'] >= 32 and 'sub_' not in name:
+        if feature['size_func'] >= 128 and 'sub_' not in name:
           nd[name] = feature
       # print("after preprocessing", len(d), len(nd))
       ndata.append(nd)
     ntraining_data.append(ndata)
   return ntraining_data
 
-def train(rfc, training_data_files):
+def prepare_training_data(training_data_files):
   train_features = []
   train_labels = []
   training_data = load_data(training_data_files)
@@ -163,7 +177,7 @@ def train(rfc, training_data_files):
       gcc_neg_labels + \
       clang_neg_labels + \
       tcc_neg_labels
-  rfc.fit(train_features, train_labels)
+  return train_features, train_labels
 
 
 if __name__ == '__main__':
@@ -195,7 +209,8 @@ if __name__ == '__main__':
   bash_tcc_clang_features, bash_tcc_clang_labels, bash_tcc_clang_names = prepare_pos(tcc_bash, clang_bash)
 
   rfc = RandomForestClassifier(random_state = 42)
-  train(rfc, training_data_files)
+  train_features, train_labels = prepare_training_data(training_data_files)
+  rfc.fit(train_features, train_labels)
   paths, _ = rfc.decision_path(bash_gcc_clang_features)
 
   base, _ = rfc.decision_path([bash_tcc_clang_features[10]])

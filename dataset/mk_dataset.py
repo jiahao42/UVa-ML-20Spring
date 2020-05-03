@@ -33,6 +33,10 @@ def extract_raw_features(cfg):
       constants = list(set(func.code_constants))
     except Exception as e:
       constants = []
+    try:
+      ops = Counter(func.operations)
+    except Exception as e:
+      ops = Counter()
     feature = {
         'name': func.name,
         'num_call_sites': len(func.get_call_sites()),
@@ -42,7 +46,7 @@ def extract_raw_features(cfg):
         'constants': constants,
         'num_nodes': func.graph.number_of_nodes(),
         'num_edges': func.graph.number_of_edges(),
-        'operations': Counter(func.operations),
+        'operations': ops,
         'graph': func.graph,
     }
     features[func.name] = feature

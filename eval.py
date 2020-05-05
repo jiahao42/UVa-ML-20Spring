@@ -42,7 +42,7 @@ SVC_eval = general_predict
 ridge_eval = general_predict
 
 """Configuration"""
-rfc = RandomForestClassifier(random_state = 42, n_estimators = 500)
+rfc = RandomForestClassifier(random_state = 42, n_estimators = 1000)
 rfr = RandomForestRegressor(random_state = 42)
 svc = SVC(gamma='auto')
 ridge = Ridge(alpha = 1.0)
@@ -88,10 +88,10 @@ def eval_all(training_data_files, eval_data_files, eval_prog):
       ['clang_tcc', prog_data[1], prog_data[2]], # clang, tcc
     ]
     buf = ''
-    total_count = 0
-    topN_corr_count = 0
-    exact_corr_count = 0
     for compiler_comb, x, y in data: 
+      total_count = 0
+      topN_corr_count = 0
+      exact_corr_count = 0
       yl = list(y)
       for name, feature in x.items():
         if name == 'main': continue # for now
@@ -109,11 +109,11 @@ def eval_all(training_data_files, eval_data_files, eval_prog):
         line = name + ' ' + ','.join(names)
         buf += line + '\n'
         print(line)
-    with open(f'{compiler_comb}_{eval_prog}.txt', 'w') as f:
-      f.write(buf)
-      f.write(f'{exact_corr_count}, {topN_corr_count}, {total_count}\n')
-      f.write(f'{exact_corr_count / total_count}\n')
-      f.write(f'{topN_corr_count / total_count}\n')
+      with open(f'{compiler_comb}_{eval_prog}.txt', 'w') as f:
+        f.write(buf)
+        f.write(f'{exact_corr_count}, {topN_corr_count}, {total_count}\n')
+        f.write(f'{exact_corr_count / total_count}\n')
+        f.write(f'{topN_corr_count / total_count}\n')
 
 compilers = ['gcc', 'clang', 'tcc']
 programs = [

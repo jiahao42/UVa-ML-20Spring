@@ -8,6 +8,7 @@ import pickle
 import os
 import angr
 from collections import Counter
+from binascii import hexlify
 
 def analyze_binary(path):
   p = angr.Project(path, auto_load_libs = False)
@@ -37,6 +38,18 @@ def extract_raw_features(cfg):
       ops = Counter(func.operations)
     except Exception as e:
       ops = Counter()
+    try:
+      strs = func.string_references()
+      strs = list(map(lambda x: x[1], strs))
+      # strs_as_int = []
+      # for s in strs:
+        # strs_as_int.append(int(hexlify(s), 16))
+    except Exception as e:
+      strs = []
+    try:
+      local_runtime_values = func.local_runtime_values
+    except Exception as e:
+      local_runtime_values = []
     feature = {
         'name': func.name,
         'num_call_sites': len(func.get_call_sites()),
@@ -47,6 +60,8 @@ def extract_raw_features(cfg):
         'num_nodes': func.graph.number_of_nodes(),
         'num_edges': func.graph.number_of_edges(),
         'operations': ops,
+        'strings': strs,
+        'local_runtime_values': local_runtime_values,
         'graph': func.graph,
     }
     features[func.name] = feature
@@ -69,7 +84,6 @@ binary_paths = [
     'sed-4.8/sed/sed',
     'nano-4.9.2/src/nano',
     'gzip-1.3.14/gzip',
-    # 'bison-3.5.4/src/bison',
     # 'custom/a.out'
 ]
 

@@ -1,0 +1,2 @@
+module load python3.6
+module load anaconda3

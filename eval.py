@@ -117,12 +117,12 @@ def eval_all(training_data_files, eval_data_files, eval_prog):
 
 compilers = ['gcc', 'clang', 'tcc']
 programs = [
+  'bc', 
   'grep', 
   'bash', 
   'tar', 
   'patch',
   'wget', 
-  'bc', 
   'sed', 
   'nano', 
   'gzip',

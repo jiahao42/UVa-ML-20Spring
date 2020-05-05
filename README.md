@@ -7,4 +7,6 @@ This repo contains the project for CS6316 Machine learning @UVa.
 
 see [here](dataset/README.md)
 
+### Dependency
 
+[ged4py](github.com/Jacobe2169/ged4py) # Don't install it from pip

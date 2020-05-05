@@ -10,8 +10,9 @@ from sklearn.ensemble import RandomForestClassifier
 import pickle
 from utils import *
 import random
-from collections import Counter
-
+from collections import Counter, OrderedDict
+import binascii
+from decimal import Decimal
 
 def prepare_pos(data1, data2):
   features = []
@@ -65,7 +66,8 @@ op_list = [
   ['CmpGE', 'CmpGT'],
 ]
 
-CONSTANT_MAX_NUM = 300
+CONSTANT_MAX_NUM = 200
+STRING_MAX_NUM = 200
 
 def normalize(f):
   # features = []
@@ -77,7 +79,19 @@ def normalize(f):
       # constants = list(data)
       if len(constants) < CONSTANT_MAX_NUM:
         constants += [0] * (CONSTANT_MAX_NUM - len(constants))
+      # constants.sort(reverse = True)
       feature += constants[:CONSTANT_MAX_NUM]
+    elif name == 'strings':
+      strs = []
+      for x in data:
+        while len(x) > 10:
+          strs.append(x[:10])
+          x = x[10:]
+      strs = list(map(lambda x: int(binascii.hexlify(bytearray(x, encoding='utf-8')), 16), strs))
+      if len(data) < STRING_MAX_NUM:
+        strs += [0] * (STRING_MAX_NUM - len(strs))
+      feature += strs[:STRING_MAX_NUM] 
+      # print(feature)
     elif name == 'graph' or name == 'name':
       continue
     elif name == 'operations':
@@ -93,6 +107,8 @@ def normalize(f):
               found = True
               break
       feature += f
+    elif name == 'local_runtime_values':
+      feature += list(f)
     elif isinstance(data, list):
       feature += data
     else:
@@ -109,24 +125,26 @@ def gen_negative_samples(size):
   samples = [None for _ in range(size)]
   for i in range(size):
     num_call_sites = random.randint(0, 50)
-    size_func = random.randint(0, 200)
-    num_arguments = random.randint(0, 12)
+    size_func = random.randint(128, 1024)
+    num_arguments = random.randint(0, 20)
     num_constants = random.randint(0, CONSTANT_MAX_NUM)
     constants = [0] * num_constants
     for ii in range(num_constants):
       constants[ii] = random.randint(0, 0xffffffff)
+    # constants.sort(reverse = True)
     num_nodes = random.randint(0, 800)
     num_edges = random.randint(0, 1000)
     samples[i] = {
-        'num_call_sites': num_call_sites,
-        'size_func': size_func,
-        'num_arguments': num_arguments,
-        'num_constants': num_constants,
-        'constants': constants,
-        'num_nodes': num_nodes,
-        'num_edges': num_edges,
-        'operations': gen_random_operations()
-        }
+      'num_call_sites': num_call_sites,
+      'size_func': size_func,
+      'num_arguments': num_arguments,
+      'num_constants': num_constants,
+      'constants': constants,
+      'num_nodes': num_nodes,
+      'num_edges': num_edges, 
+      'strings': [random.randint(0, 0xffffffffffff) for _ in range(random.randint(0, 10))],
+      'operations': gen_random_operations()
+    }
   return samples
 
 def preprocess(training_data):
@@ -134,9 +152,9 @@ def preprocess(training_data):
   for data in training_data:
     ndata = []
     for d in data:
-      nd = {}
+      nd = OrderedDict()
       for name, feature in d.items():
-        if feature['size_func'] >= 128 and 'sub_' not in name:
+        if feature['size_func'] >= 512 and 'sub_' not in name and len(feature['constants']) >= 10:
           nd[name] = feature
       # print("after preprocessing", len(d), len(nd))
       ndata.append(nd)
@@ -152,9 +170,9 @@ def prepare_training_data(training_data_files):
     gcc_data = data[0]
     clang_data = data[1]
     tcc_data = data[2]
-    gcc_neg_data = gen_negative_samples(len(gcc_data))
-    clang_neg_data = gen_negative_samples(len(clang_data))
-    tcc_neg_data = gen_negative_samples(len(tcc_data))
+    gcc_neg_data = gen_negative_samples(len(gcc_data) * 10)
+    clang_neg_data = gen_negative_samples(len(clang_data) * 10)
+    tcc_neg_data = gen_negative_samples(len(tcc_data) * 10)
 
     gc_pos_features, gc_pos_labels, _ = prepare_pos(gcc_data, clang_data)
     gt_pos_features, gt_pos_labels, _ = prepare_pos(gcc_data, tcc_data)

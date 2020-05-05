@@ -13,29 +13,19 @@ from sklearn.linear_model import Ridge
 from sklearn.svm import SVC
 from core import *
 
-programs = [
-  'grep', 'bash', 'tar', # 'patch',
-  # 'wget', 'bc', 'sed', 'nano', 'gzip',
-]
-compilers = ['gcc', 'clang', 'tcc']
-training_data_files = [
-  [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in programs
-]
-
-eval_programs = ['patch']
-eval_data_files = [
-  [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in eval_programs
-]
 
 def get_topN_result(sims, N):
   sims = sorted(sims, key = lambda x: x[0], reverse = True)
   # sims = sorted(sims, key = lambda x: x[0], reverse = False)
   return sims[:N]
 
+def similarity(x, y):
+  return cos_sim(x, y)
+
 def random_forest_classifier_eval(trainer, target, features):
   base, _ = trainer.decision_path([target])
   paths, _ = trainer.decision_path(features)
-  res = [(similarity_func(path, base), i) for i, path in enumerate(paths)]
+  res = [(similarity(path, base), i) for i, path in enumerate(paths)]
   return res
 
 def general_predict(trainer, target, features):
@@ -52,7 +42,7 @@ SVC_eval = general_predict
 ridge_eval = general_predict
 
 """Configuration"""
-rfc = RandomForestClassifier(random_state = 42, n_estimators = 200)
+rfc = RandomForestClassifier(random_state = 42, n_estimators = 500)
 rfr = RandomForestRegressor(random_state = 42)
 svc = SVC(gamma='auto')
 ridge = Ridge(alpha = 1.0)
@@ -60,17 +50,16 @@ trainer = rfc
 
 eval_func = random_forest_classifier_eval
 
-similarity_func = cos_sim
-# similarity_func = euclidean_distances
-
 def graph_eval(scores, target, features):
   G1 = target['graph']
   fl = list(features.values())
   for score, i in scores:
     f = fl[i]
     G2 = f['graph']
-    scores[i][0][0] += edit_distance(G1, G2)
-    # print(scores[i])
+    score = sigmoid(scores[i][0])
+    dist = sigmoid(edit_distance(G1, G2))
+    # print(score, dist)
+    scores[i] = (score - dist, scores[i][1])
   return scores
 
 def eval_one(trainer, target, features, N = 5):
@@ -85,42 +74,71 @@ def eval_one(trainer, target, features, N = 5):
   scores = graph_eval(scores, target, features)
   return get_topN_result(scores, N)
 
-def eval_all():
+
+def eval_all(training_data_files, eval_data_files, eval_prog):
   train_features, train_labels = prepare_training_data(training_data_files)
   trainer.fit(train_features, train_labels)
+  print(eval_data_files)
   eval_data = load_data(eval_data_files)
   eval_data = preprocess(eval_data)
-  total_count = 0
-  topN_corr_count = 0
-  exact_corr_count = 0
   for prog_data in eval_data:
     data = [
-      [prog_data[0], prog_data[1]],
-      # [prog_data[0], prog_data[2]],
-      # [prog_data[1], prog_data[2]],
+      ['gcc_clang', prog_data[0], prog_data[1]], # gcc, clang
+      ['gcc_tcc', prog_data[0], prog_data[2]], # gcc, tcc
+      ['clang_tcc', prog_data[1], prog_data[2]], # clang, tcc
     ]
-    for x, y in data: 
+    buf = ''
+    total_count = 0
+    topN_corr_count = 0
+    exact_corr_count = 0
+    for compiler_comb, x, y in data: 
       yl = list(y)
       for name, feature in x.items():
-        # if feature['size_func'] < 4: continue
-        # if 'sub_' in name: continue
+        if name == 'main': continue # for now
         if name not in y: continue # name only appears in one program
         nf = [normalize(feature) + normalize(feature)]
         if nf.count(0) / len(nf) > 0.5: continue # discard if the feature has too many 0
         total_count += 1 
-        numerical_topN = 10
-        structural_topN = 5
+        numerical_topN = 100
         res = eval_one(trainer, feature, y, numerical_topN)
         names = [yl[i] for val, i in res]
         if names[0] == name:
           exact_corr_count += 1
         if name in names:
           topN_corr_count += 1
-        print(name, names)
-  print(exact_corr_count, topN_corr_count, total_count)
-  print(exact_corr_count / total_count)
-  print(topN_corr_count / total_count)
+        line = name + ' ' + ','.join(names)
+        buf += line + '\n'
+        print(line)
+    with open(f'{compiler_comb}_{eval_prog}.txt', 'w') as f:
+      f.write(buf)
+      f.write(f'{exact_corr_count}, {topN_corr_count}, {total_count}\n')
+      f.write(f'{exact_corr_count / total_count}\n')
+      f.write(f'{topN_corr_count / total_count}\n')
 
+compilers = ['gcc', 'clang', 'tcc']
+programs = [
+  'grep', 
+  'bash', 
+  'tar', 
+  'patch',
+  'wget', 
+  'bc', 
+  'sed', 
+  'nano', 
+  'gzip',
+]
 if __name__ == '__main__':
-  eval_all()
+  for prog in programs:
+    training_programs = programs.copy()
+    training_programs.remove(prog)
+    training_data_files = [
+      [f'{compiler}_{prog}.pickle' for compiler in compilers] for prog in training_programs
+    ]
+    eval_programs = [prog]
+    eval_data_files = [[f'{compiler}_{prog}.pickle' for compiler in compilers] for ep in eval_programs]
+    print(f'evaluating {prog}')
+    # print(training_data_files)
+    # print(eval_data_files)
+
+    eval_all(training_data_files, eval_data_files, prog)
 

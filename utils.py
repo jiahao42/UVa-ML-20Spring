@@ -16,7 +16,6 @@ def edit_distance(G1, G2):
   # res = nx.graph_edit_distance(G1, G2)
   # res = nx.optimize_graph_edit_distance(G1, G2)
   res = graph_edit_dist.compare(G1, G2)
-  print(res)
   return res
   # for v in res:
     # print(v)
@@ -42,4 +41,11 @@ def load_data(data_files, path = 'dataset/'):
       with open(path + filename, 'rb') as f:
         _data.append(pickle.load(f))
     data.append(_data)
+  return data
+
+def load_eval_data(filenames, path = 'dataset/'):
+  data = []
+  for filename in filenames:
+    with open(path + filename, 'rb') as f:
+      data.append(pickle.load(f))
   return data
